@@ -1,4 +1,4 @@
-""" viz.py: utilities for visualizing graph data structures """
+""" viz_utils.py: utilities for visualizing graph data structures """
 import numpy as np
 import math
 import svgwrite
@@ -22,13 +22,14 @@ def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_fact
         adjacency[i][j] = (dest, cost/mean_edge_cost)
     x = np.random.randn(n)
     y = np.random.randn(n)
-    learning_rate = .02# *mean_edge_cost
+    learning_rate = .0003*n**2# *mean_edge_cost
+    print 'learning rate:', learning_rate
     improvement = 1
     iteration = 0
     prev_loss = float('inf')
     mutated = False
     mutation_count = 0
-    while improvement > 0.001 or mutated:
+    while improvement > 0.0001 or mutated:
       # mutated = False
       gradient_x, gradient_y = _coords_loss_gradient(x, y, n, adjacency)
       x -= learning_rate*gradient_x
