@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from viz_utils import find_optimal_coords
 import copy
+
 class GraphAnimation:
   def __init__(self, n, adjacency, x, y, representation='list', labels=None, weighted=False, initial_color=(0, 0, 0)):
     if representation != 'list':
@@ -39,7 +40,6 @@ class GraphAnimation:
   def save_gif(self, filename, size=(512, 512), fps=1, node_radius=15, edge_width=2, padding=40):
     x = node_radius+padding+(np.copy(self.x) - np.min(self.x))*(size[0]-2*node_radius-2*padding)/(np.max(self.x)-np.min(self.x))
     y = node_radius+padding+(np.copy(self.y) - np.min(self.y))*(size[1]-2*node_radius-2*padding)/(np.max(self.y)-np.min(self.y))
-    print x, y
     frames = []
     font = ImageFont.truetype('Arial', size=30)
     for node_colors, edge_colors in self.past_states:
@@ -49,11 +49,15 @@ class GraphAnimation:
       for edge_src in range(self.n):
         for edge_dest, cost in self.adjacency[edge_src]:
           ctx.line([x[edge_src], y[edge_src], x[edge_dest], y[edge_dest]], width=edge_width, fill=edge_colors[(edge_src, edge_dest)])
+          # edge label
+          text_w, text_h = ctx.textsize(str(cost), font=font)
+          ctx.text(((x[edge_src]+x[edge_dest])/2, (y[edge_src]+y[edge_dest])/2), str(cost), fill='black', font=font)
       # draw nodes
       for vertex in range(self.n):
         for i in range(2):
           radius = node_radius-i
           ctx.ellipse([x[vertex]-radius, y[vertex]-radius, x[vertex]+radius, y[vertex]+radius], fill='white', outline=node_colors[vertex])
+          # node label
           text_w, text_h = ctx.textsize(self.labels[vertex], font=font)
           ctx.text((x[vertex]-text_w/2, y[vertex]-text_h/2), self.labels[vertex], fill='black', font=font)
       frames.append(im)
