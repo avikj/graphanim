@@ -20,12 +20,12 @@ with open(os.path.abspath('graph.in')) as graph_file:
     adj_list[a].append((b, c))
     adj_list[b].append((a, c))
 print adj_list
-x, y = find_optimal_coords(n, adj_list)
+x, y = find_optimal_coords(n, adj_list, verbose=True)
 
 # Set up animation
 anim = GraphAnimation(n, adj_list, x, y, labels=labels)
 anim.next_frame()
-# Run Dijkstra's algorithm from node 0
+# Run Dijkstra's shortest path algorithm from node 0
 cost = [float('inf')]*n # cost[i] will hold min cost to reach node i from node a
 in_q = [True]*n
 parent = [-1]*n
@@ -50,22 +50,4 @@ while q:
   anim.next_frame()
   anim.set_node_color(u, color=(127, 0, 0))
 anim.save_gif('dijkstra.gif', node_radius=20, size=(1000, 1000))
-'''
-def dijkstra(adj_list, n, a, b):
-    cost = [float('inf')]*n # cost[i] will hold min cost to reach node i from node a
-    in_q = [True]*n
-    parent = [-1]*n
-    q = [(0, a)] # set cost of a to 0
-    for _ in range(n):
-        cost_u, u = heappop(q)
-        if u == b:
-            return cost_u
-        in_q[u] = False
-        for v, edge_cost in adj_list[u]:
-            if in_q[v] and cost_u | edge_cost < cost[v]:
-                cost[v] = cost_u | edge_cost
-                parent[v] = u
-                heappush(q, (cost[v], v))
-    return cost[b]
-
-'''
+print 'Wrote animation to dijkstra.gif.'
