@@ -3,24 +3,25 @@ import numpy as np
 import math
 import svgwrite
 from copy import deepcopy
+import time 
 
 def main():
-  adjList = [[(1, 10), (2, 10), (3, 10), (4, 10)], 
-    [(0, 10), (2, 10), (3, 10), (4, 10)], 
-    [(0, 10), (1, 10), (3, 10), (4, 10)], 
-    [(0, 10), (1, 10), (2, 10), (4, 10)], 
-    [(0, 10), (1, 10), (2, 10), (3, 10), (5, 6)], [(4, 6)]]
-  '''adjList = [[] for i in range(7)]
   with open('graph.in') as graph_file:
     l = list(graph_file)
     print l
-    e = int(l[0].strip())
+    v = int(l[0].strip())
+    e = int(l[1].strip())
+
+    adjList = [[] for i in range(v)]
     for i in range(e):
-      a, b = [int(s)-1 for s in l[i+1].strip().split(' ')]
-      adjList[a].append((b, 1))
-      adjList[b].append((a, 1))'''
+      a, b, c = [int(s)-1 for s in l[i+2].strip().split(' ')]
+      c += 1
+      if c == -1:
+        c = np.random.randint(5, 15)
+      adjList[a].append((b, c))
+      adjList[b].append((a, c))
   print adjList
-  x, y = coords(len(adjList), adjList)
+  x, y = find_optimal_coords(len(adjList), adjList, vertex_spacing_factor=1)
   print 'x =', x, '\ny = ', y
   save_svg('graph1.svg', len(adjList), x, y, adjList)
 
@@ -28,57 +29,133 @@ def main():
 Find (x, y) to minimize cost function J(x, y, E), where x is list of x coords, y is 
 list of y coords, and E is list of edges in graph. Uses gradient descent algorithm
 for optimization.
-Objective function J:
-J(x, y, E)=\sum_{(i, j, c) \in E} \left ( \sqrt{(x_i-x_j)^2+(y_i-y_j)^2}-c\right )^2
-+ sum for each node {sum for each pair of edges from that node {cosine similarity of edge vectors}}
 '''
-def coords(n, adjacency, representation='list'):
+def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0):
   adjacency = deepcopy(adjacency)
+  start = time.clock()
+  print adjacency
   if representation == 'list':
     mean_edge_cost = get_mean_edge_cost(adjacency)
-    x = mean_edge_cost*np.random.randn(n)
-    y = mean_edge_cost*np.random.randn(n)
-    learning_rate = .01# *mean_edge_cost
+    for i in range(n):
+      for j in range(len(adjacency[i])):
+        dest, cost = adjacency[i][j]
+        adjacency[i][j] = (dest, cost/mean_edge_cost)
+    x = np.random.randn(n)
+    y = np.random.randn(n)
+    learning_rate = .02# *mean_edge_cost
     improvement = 1
-    i = 0
-    while improvement > 0.000001:
+    iteration = 0
+    prev_loss = float('inf')
+    mutated = False
+    mutation_count = 0
+    while improvement > 0.001 or mutated:
+      # mutated = False
       gradient_x, gradient_y = _coords_loss_gradient(x, y, n, adjacency)
-      prev = _coords_loss(x, y, n, adjacency)
       x -= learning_rate*gradient_x
       y -= learning_rate*gradient_y
-      improvement = prev-_coords_loss(x, y, n, adjacency)
-      i += 1
-      if i < 15 or i % 50 == 0: 
-        x -= np.min(x)
-        y -= np.min(y)
-        save_svg('temp%d.svg'%i, len(adjacency), x, y, adjacency)
-      print 'iter: %d, cost: %.4f'%(i, _coords_loss(x, y, n, adjacency))
+      current_loss = _coords_loss(x, y, n, adjacency, vertex_spacing_factor=vertex_spacing_factor, edge_spacing_factor=edge_spacing_factor)
+      improvement = prev_loss-current_loss
+      prev_loss = current_loss
+      iteration += 1
+      # try random mutations to avoid local minima
+      if iteration % 10 == 0:
+        current_loss, mutated = mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss)
+        if mutated:
+          print 'cost:', current_loss
+      if iteration < 15 or iteration % 5 == 0: 
+        save_svg('temp.svg', len(adjacency), x, y, adjacency)
+        print 'iter: %d, time_elapsed: %s, cost: %.8f'%(iteration, time.clock()-start,_coords_loss(x, y, n, adjacency, vertex_spacing_factor=vertex_spacing_factor, edge_spacing_factor=edge_spacing_factor))
+    print 'Trying a few mutations before quitting.'
+    #for i in range(30):
+     # current_loss, mutated = mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss)
+    #print count_intersections(x, y, n, adjacency), 'intersections'
     return x, y
   else:
     raise ValueError('Graph representation \'%s\' is not supported.'%representation)
-def _coords_loss(x, y, n, adjacency, k=1):
+
+# TODO random location swap
+def mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss):
+  current_intersections = count_intersections(x, y, n, adjacency)
+  low_edge_vertices = [i for i in range(n) if len(adjacency[i])<=2]
+  mutation_index = np.random.randint(len(low_edge_vertices))
+  if len(adjacency[low_edge_vertices[mutation_index]]) == 1: # random rotate around neighbor
+    neighbor_i, _ = adjacency[low_edge_vertices[mutation_index]][0]
+    radius = math.sqrt((x[low_edge_vertices[mutation_index]]-x[neighbor_i])**2+(y[low_edge_vertices[mutation_index]]-y[neighbor_i])**2)
+    angle = np.random.rand()*2*math.pi
+    x_shift = radius*math.cos(angle)+x[neighbor_i]-x[low_edge_vertices[mutation_index]]
+    y_shift = radius*math.sin(angle)+y[neighbor_i]-y[low_edge_vertices[mutation_index]]
+    print 'Rotating node %d about neighbor'% low_edge_vertices[mutation_index]
+  elif len(adjacency[low_edge_vertices[mutation_index]]) == 2:
+    (neighbor_i, _), (neighbor_j, _) = adjacency[low_edge_vertices[mutation_index]]
+    print low_edge_vertices[mutation_index], neighbor_i, neighbor_j
+    print neighbor_i, neighbor_j
+    a = (y[neighbor_i]-y[neighbor_j])/(x[neighbor_i]-x[neighbor_j])
+    c = y[neighbor_i]-a*x[neighbor_i]
+    d = (x[low_edge_vertices[mutation_index]] + (y[low_edge_vertices[mutation_index]] - c)*a)/(1 + a**2)
+    x_shift = 2*d - 2*x[low_edge_vertices[mutation_index]]
+    y_shift = 2*d*a + 2*c - 2*y[low_edge_vertices[mutation_index]]
+    print 'Flipping 2-n node across edge'
+  x[low_edge_vertices[mutation_index]] += x_shift
+  y[low_edge_vertices[mutation_index]] += y_shift
+  mutated_loss = _coords_loss(x, y, n, adjacency, vertex_spacing_factor=vertex_spacing_factor, edge_spacing_factor=edge_spacing_factor)
+  mutated_intersections = count_intersections(x, y, n, adjacency)
+  if (mutated_loss < current_loss) and mutated_intersections == current_intersections or (mutated_intersections < current_intersections):
+    print 'Mutation accepted. Moved from (%f, %f) to (%f, %f)'%(x[low_edge_vertices[mutation_index]] - x_shift, y[low_edge_vertices[mutation_index]] - y_shift, x[low_edge_vertices[mutation_index]], y[low_edge_vertices[mutation_index]])
+    current_loss = mutated_loss
+    return current_loss, True
+  else:
+    print 'intersections before:',current_intersections,', intersections after:', count_intersections(x, y, n, adjacency)
+    print 'Mutation rejected. Did not move from (%f, %f) to (%f, %f)'%(x[low_edge_vertices[mutation_index]] - x_shift, y[low_edge_vertices[mutation_index]] - y_shift, x[low_edge_vertices[mutation_index]], y[low_edge_vertices[mutation_index]])
+    save_svg('mutated%f.svg'%current_loss, n, x, y, adjacency)
+    x[low_edge_vertices[mutation_index]] -= x_shift
+    y[low_edge_vertices[mutation_index]] -= y_shift
+    save_svg('unmutated%f.svg'%current_loss, n, x, y, adjacency)
+    return current_loss, False
+
+def count_intersections(x, y, n, adjacency):
+  def orientation(i, j, k):
+    return  (y[k]-y[i])*(x[j]-x[i]) > (y[j]-y[i])*(x[k]-x[i])
+  def intersect(i,j,k,l):
+    return orientation(i, k, l) != orientation(j, k, l) and orientation(i, j, k) != orientation(i, j, l)
+  edges = []
+  for i in range(n):
+    for j, c in adjacency[i]:
+      if i < j:
+        edges.append((i, j))
+  count = 0
+  for a in edges:
+    for b in edges:
+      if len(set([a[0], a[1], b[0], b[1]])) == 4 and intersect(a[0], a[1], b[0], b[1]):
+        count += 1
+  return count/2
+def _coords_loss(x, y, n, adjacency, vertex_spacing_factor=1, edge_spacing_factor=0):
   result = 0
   mean_edge_cost = get_mean_edge_cost(adjacency)
   for i in range(n):
     for j, c in adjacency[i]:
       result += (math.sqrt((x[i]-x[j])**2+(y[i]-y[j])**2)-c)**2
-  '''
-  # add cosine of angle between edges in cost
-  for i in range(n): # TODO: differentiate this and update gradient code
-    for j_0, c_0 in adjacency[i]:
-      for j_1, c_1 in adjacency[i]:
-        result += k*cosine_similarity(x, y, i, j_0, i, j_1)*mean_edge_cost
-  '''
+  # vertex-vertex spacing
   for i in range(n):
     for j in range(n):
       if i != j and j not in adjacency[i] and i not in adjacency[j]:
-        result += k*math.log(1+math.exp(0.5*mean_edge_cost-math.sqrt((x[i]-x[j])**2+(y[i]-y[j])**2))) # 
+        result += mean_edge_cost*vertex_spacing_factor*math.log(1+math.exp(0.5-math.sqrt((x[i]-x[j])**2+(y[i]-y[j])**2)/mean_edge_cost)) # penalize pairs of nodes closer than half mean edge length
+  if edge_spacing_factor != 0:
+    # vertex-edge and edge-edge spacing
+    edge_midpoints_and_vertices = []
+    for i in range(n):
+      for j, c in adjacency[i]:
+        edge_midpoints_and_vertices.append(((x[i]+x[j])/2,(y[i]+y[j])/2))
+    for i in range(n):
+      edge_midpoints_and_vertices.append((x[i], y[i]))
+    for i in range(len(edge_midpoints_and_vertices)):
+      for j in range(len(edge_midpoints_and_vertices)):
+        if i != j:
+          result += mean_edge_cost*edge_spacing_factor*math.log(1+math.exp(0.2-math.sqrt((edge_midpoints_and_vertices[i][0]-edge_midpoints_and_vertices[j][0])**2+(edge_midpoints_and_vertices[i][1]-edge_midpoints_and_vertices[j][1])**2)/mean_edge_cost))
   return result
 def _coords_loss_gradient(x, y, n, adjacency):
   partial_x = np.zeros(n)
   partial_y = np.zeros(n)
-  for i in range(n): # assume unweighted for now
-    # find partial_x[i]
+  for i in range(n): # approximate derivative to experiment with different cost functions
     delta = 0.01
     loss_0 = _coords_loss(x, y, n, adjacency)
     x[i] += delta
@@ -90,21 +167,20 @@ def _coords_loss_gradient(x, y, n, adjacency):
     loss_f = _coords_loss(x, y, n, adjacency)
     y[i] -= delta
     partial_y[i] = (loss_f-loss_0)/delta
-    '''for j, c in adjacency[i]:
+    '''for j, c in adjacency[i]: # found derivative by hand and implemented
       actual_dist = math.sqrt((x[i]-x[j])**2+(y[i]-y[j])**2)
       partial_x[i] += 2*(1-c/actual_dist)*(x[i]-x[j])
       partial_y[i] += 2*(1-c/actual_dist)*(y[i]-y[j])'''
   return partial_x, partial_y
-# i_0, j_0 are endpoints of first vector, i_1, j_1 are endpoints of second
-def cosine_similarity(x, y, i_0, j_0, i_1, j_1):
-  vec_0 = [x[i_0]-x[j_0], y[i_0]-y[j_0]]
-  vec_1 = [x[i_1]-x[j_1], y[i_1]-y[j_1]]
-  return np.dot(vec_0, vec_1)/(np.linalg.norm(vec_0)*np.linalg.norm(vec_1))
 def get_mean_edge_cost(adjacency):
   return np.mean([cost for edges in adjacency for dest, cost in edges])
 def save_svg(filename, n, x, y, adjacency, representation='list', labels=None):
+  x = np.copy(x)
+  y = np.copy(y)
+  x -= min(x)
+  y -= min(y)
   labels = labels or 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  scale = 200/get_mean_edge_cost(adjacency)
+  scale = 600/max(np.max(x), np.max(y))
   shift = 20
   node_radius = 15
   x = x*scale+shift
@@ -114,11 +190,11 @@ def save_svg(filename, n, x, y, adjacency, representation='list', labels=None):
     for i in range(n):
       for j, c in adjacency[i]:
         dwg.add(dwg.line((x[i], y[i]), (x[j], y[j]), stroke='black'))
-        dwg.add(dwg.text(str(c), insert=((x[i]+x[j])/2, (y[i]+y[j])/2), fill='black'))
+        dwg.add(dwg.text(str(c), insert=((x[i]+x[j])/2, (y[i]+y[j])/2), fill='black', style="font-family:Arial"))
     for i in range(n):
       node = dwg.add(dwg.g(id=str(i)))
-      node.add(dwg.circle((x[i], y[i]), node_radius, fill='white', stroke='black'))
-      label = node.add(dwg.text(labels[i], insert=(x[i], y[i]), fill='black'))
+      node.add(dwg.circle((x[i], y[i]), node_radius, fill='black', stroke='black'))
+      label = node.add(dwg.text(labels[i], insert=(x[i], y[i]), fill='white', style="font-family:Arial"))
       label['text-anchor'] = 'middle'
       label['dominant-baseline'] = 'middle'
       dwg.add(node)
