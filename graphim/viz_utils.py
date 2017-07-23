@@ -10,7 +10,7 @@ Find (x, y) to minimize cost function J(x, y, E), where x is list of x coords, y
 list of y coords, and E is list of edges in graph. Uses gradient descent algorithm
 for optimization.
 '''
-def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0, mutation_rate=0.4):
+def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0, mutation_rate=0.4, verbose=False):
   adjacency = deepcopy(adjacency)
   start = time.clock()
   print adjacency
@@ -23,7 +23,8 @@ def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_fact
     x = np.random.randn(n)
     y = np.random.randn(n)
     learning_rate = .0003*n**2# *mean_edge_cost
-    print 'learning rate:', learning_rate
+    if verbose:
+      print 'learning rate:', learning_rate
     improvement = 1
     iteration = 0
     prev_loss = float('inf')
@@ -41,12 +42,12 @@ def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_fact
       # try random mutations to avoid local minima
       if np.random.rand() < mutation_rate:
         current_loss, mutated = mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss)
-        if mutated:
-          print 'cost:', current_loss
+        if verbose and mutated:
+          print 'accepted mutation; cost:', current_loss
       if iteration < 15 or iteration % 5 == 0: 
-        save_svg('temp.svg', len(adjacency), x, y, adjacency)
-        print 'iter: %d, time_elapsed: %s, cost: %.8f'%(iteration, time.clock()-start,_coords_loss(x, y, n, adjacency, vertex_spacing_factor=vertex_spacing_factor, edge_spacing_factor=edge_spacing_factor))
-    print 'Trying a few mutations before quitting.'
+        # save_svg('temp.svg', len(adjacency), x, y, adjacency)
+        if verbose:
+          print 'iter: %d, time_elapsed: %s, cost: %.8f'%(iteration, time.clock()-start,_coords_loss(x, y, n, adjacency, vertex_spacing_factor=vertex_spacing_factor, edge_spacing_factor=edge_spacing_factor))
     #for i in range(30):
      # current_loss, mutated = mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss)
     #print count_intersections(x, y, n, adjacency), 'intersections'
@@ -65,32 +66,32 @@ def mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, curre
     angle = np.random.rand()*2*math.pi
     x_shift = radius*math.cos(angle)+x[neighbor_i]-x[low_edge_vertices[mutation_index]]
     y_shift = radius*math.sin(angle)+y[neighbor_i]-y[low_edge_vertices[mutation_index]]
-    print 'Rotating node %d about neighbor'% low_edge_vertices[mutation_index]
+    # print 'Rotating node %d about neighbor'% low_edge_vertices[mutation_index]
   elif len(adjacency[low_edge_vertices[mutation_index]]) == 2:
     (neighbor_i, _), (neighbor_j, _) = adjacency[low_edge_vertices[mutation_index]]
-    print low_edge_vertices[mutation_index], neighbor_i, neighbor_j
-    print neighbor_i, neighbor_j
+    # print low_edge_vertices[mutation_index], neighbor_i, neighbor_j
+    # print neighbor_i, neighbor_j
     a = (y[neighbor_i]-y[neighbor_j])/(x[neighbor_i]-x[neighbor_j])
     c = y[neighbor_i]-a*x[neighbor_i]
     d = (x[low_edge_vertices[mutation_index]] + (y[low_edge_vertices[mutation_index]] - c)*a)/(1 + a**2)
     x_shift = 2*d - 2*x[low_edge_vertices[mutation_index]]
     y_shift = 2*d*a + 2*c - 2*y[low_edge_vertices[mutation_index]]
-    print 'Flipping 2-n node across edge'
+    # print 'Flipping 2-n node across edge'
   x[low_edge_vertices[mutation_index]] += x_shift
   y[low_edge_vertices[mutation_index]] += y_shift
   mutated_loss = _coords_loss(x, y, n, adjacency, vertex_spacing_factor=vertex_spacing_factor, edge_spacing_factor=edge_spacing_factor)
   mutated_intersections = count_intersections(x, y, n, adjacency)
   if (mutated_loss < current_loss) and mutated_intersections == current_intersections or (mutated_intersections < current_intersections):
-    print 'Mutation accepted. Moved from (%f, %f) to (%f, %f)'%(x[low_edge_vertices[mutation_index]] - x_shift, y[low_edge_vertices[mutation_index]] - y_shift, x[low_edge_vertices[mutation_index]], y[low_edge_vertices[mutation_index]])
+    # print 'Mutation accepted. Moved from (%f, %f) to (%f, %f)'%(x[low_edge_vertices[mutation_index]] - x_shift, y[low_edge_vertices[mutation_index]] - y_shift, x[low_edge_vertices[mutation_index]], y[low_edge_vertices[mutation_index]])
     current_loss = mutated_loss
     return current_loss, True
   else:
-    print 'intersections before:',current_intersections,', intersections after:', count_intersections(x, y, n, adjacency)
-    print 'Mutation rejected. Did not move from (%f, %f) to (%f, %f)'%(x[low_edge_vertices[mutation_index]] - x_shift, y[low_edge_vertices[mutation_index]] - y_shift, x[low_edge_vertices[mutation_index]], y[low_edge_vertices[mutation_index]])
-    save_svg('mutated%f.svg'%current_loss, n, x, y, adjacency)
+    # print 'intersections before:',current_intersections,', intersections after:', count_intersections(x, y, n, adjacency)
+    # print 'Mutation rejected. Did not move from (%f, %f) to (%f, %f)'%(x[low_edge_vertices[mutation_index]] - x_shift, y[low_edge_vertices[mutation_index]] - y_shift, x[low_edge_vertices[mutation_index]], y[low_edge_vertices[mutation_index]])
+    # save_svg('mutated%f.svg'%current_loss, n, x, y, adjacency)
     x[low_edge_vertices[mutation_index]] -= x_shift
     y[low_edge_vertices[mutation_index]] -= y_shift
-    save_svg('unmutated%f.svg'%current_loss, n, x, y, adjacency)
+    # save_svg('unmutated%f.svg'%current_loss, n, x, y, adjacency)
     return current_loss, False
 
 def count_intersections(x, y, n, adjacency):
