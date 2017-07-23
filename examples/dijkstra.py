@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
 from graphim.animation import GraphAnimation
-from graphim.viz_utils import find_optimal_coords
+from graphim.utils import find_optimal_coords
 import os
 from heapq import heappop, heappush
 with open(os.path.abspath('graph.in')) as graph_file:

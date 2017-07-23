@@ -1,6 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from viz_utils import find_optimal_coords
 import copy
 
 class GraphAnimation:
@@ -62,34 +61,3 @@ class GraphAnimation:
           ctx.text((x[vertex]-text_w/2, y[vertex]-text_h/2), self.labels[vertex], fill='black', font=font)
       frames.append(im)
     frames[0].save(filename, save_all=True, append_images=frames[1:], loop=0, duration=1000/fps)
-if __name__ == '__main__':
-  with open('graph.in') as graph_file:
-    l = list(graph_file)
-    print l
-    v = int(l[0].strip())
-    labels = []
-    for i in range(1, 1+v):
-      labels.append(l[i].strip())
-    e = int(l[1+v].strip())
-    adjList = [[] for i in range(v)]
-    for i in range(e):
-      a, b, c = [int(s)-1 for s in l[i+2+v].strip().split(' ')]
-      c += 1
-      if c == -1:
-        c = np.random.randint(5, 15)
-      adjList[a].append((b, c))
-      adjList[b].append((a, c))
-  print adjList
-  # x, y = find_optimal_coords(len(adjList), adjList, vertex_spacing_factor=1)
-  x = [ 367.84228811,503.14438045,174.29192134,512,355.12095785,0] 
-  y = [ 496.81964145,0,429.34652448,457.45613558,175.76995579,512]
-  highlighted = (255, 0, 0)
-  anim = GraphAnimation(v, adjList, x, y, labels=labels)
-  anim.next_frame()
-  anim.set_node_color(0, highlighted)
-  anim.next_frame()
-  anim.set_edge_color(0, 1, highlighted)
-  anim.next_frame()
-  anim.set_edge_color(0, 3, highlighted)
-  anim.next_frame()
-  anim.save_gif('out.gif', size=(1024, 1024), node_radius=30)
