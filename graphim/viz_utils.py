@@ -5,32 +5,12 @@ import svgwrite
 from copy import deepcopy
 import time 
 
-def main():
-  with open('graph.in') as graph_file:
-    l = list(graph_file)
-    print l
-    v = int(l[0].strip())
-    e = int(l[1].strip())
-
-    adjList = [[] for i in range(v)]
-    for i in range(e):
-      a, b, c = [int(s)-1 for s in l[i+2].strip().split(' ')]
-      c += 1
-      if c == -1:
-        c = np.random.randint(5, 15)
-      adjList[a].append((b, c))
-      adjList[b].append((a, c))
-  print adjList
-  x, y = find_optimal_coords(len(adjList), adjList, vertex_spacing_factor=1)
-  print 'x =', x, '\ny = ', y
-  save_svg('graph1.svg', len(adjList), x, y, adjList)
-
 '''
 Find (x, y) to minimize cost function J(x, y, E), where x is list of x coords, y is 
 list of y coords, and E is list of edges in graph. Uses gradient descent algorithm
 for optimization.
 '''
-def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0):
+def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0, mutation_rate=0.4):
   adjacency = deepcopy(adjacency)
   start = time.clock()
   print adjacency
@@ -58,7 +38,7 @@ def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_fact
       prev_loss = current_loss
       iteration += 1
       # try random mutations to avoid local minima
-      if iteration % 10 == 0:
+      if np.random.rand() < mutation_rate:
         current_loss, mutated = mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss)
         if mutated:
           print 'cost:', current_loss
@@ -200,6 +180,4 @@ def save_svg(filename, n, x, y, adjacency, representation='list', labels=None):
       dwg.add(node)
     dwg.save()
   else:
-    raise ValueError('Graph representation \'%s\' is not supported.'%representation)
-if __name__ == '__main__':
-  main()
+    raise ValueError('Graph representation \'%s\' is not supported.'%representation)\
