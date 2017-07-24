@@ -12,12 +12,12 @@ x, y = find_optimal_coords(n, adj_list, verbose=False)
 
 # Set up animation
 highlighted_1 = (255, 0, 0)
-higlighted_2 = (0, 0, 255)
+highlighted_2 = (0, 0, 255)
 unhighlighted = (127, 127, 127)
 anim = GraphAnimation(n, adj_list, x, y, labels=labels, initial_color=unhighlighted)
 anim.next_frame()
 # Run Prim's minimum spanning tree algorithm from node 0
-print 'Running Prim\'s minimum spanning tree algorithm from node %s'%labels[0]
+print 'Running Prim\'s minimum spanning tree algorithm from node %s.'%labels[0]
 cost = [float('inf')]*n # cost[i] will hold min cost to reach node i from node a
 in_q = [True]*n
 parent = [-1]*n
@@ -34,8 +34,8 @@ while q:
   for v, edge_cost in adj_list[u]:
     if in_q[v] and edge_cost < cost[v]:
       cost[v] = edge_cost
-      anim.set_node_color(v, color=higlighted_2)
-      anim.set_edge_color(u, v, color=higlighted_2)
+      anim.set_node_color(v, color=highlighted_2)
+      anim.set_edge_color(u, v, color=highlighted_2)
       anim.set_edge_color(parent[v], v, color=unhighlighted) # unhighlight previous shortest path to v
       parent[v] = u
       heappush(q, (cost[v], v))
