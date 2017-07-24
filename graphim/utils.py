@@ -4,16 +4,18 @@ import math
 import svgwrite
 from copy import deepcopy
 import time 
+import random
 
 '''
 Find (x, y) to minimize cost function J(x, y, E), where x is list of x coords, y is 
 list of y coords, and E is list of edges in graph. Uses gradient descent algorithm
 for optimization.
 '''
-def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0, mutation_rate=0.4, verbose=False):
+def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_factor=1, edge_spacing_factor=0, mutation_rate=0.4, verbose=False, max_iter=0):
   adjacency = deepcopy(adjacency)
   start = time.clock()
-  print adjacency
+  if verbose:
+    print 'adjacency:', adjacency
   if representation == 'list':
     mean_edge_cost = get_mean_edge_cost(adjacency)
     for i in range(n):
@@ -30,7 +32,7 @@ def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_fact
     prev_loss = float('inf')
     mutated = False
     mutation_count = 0
-    while improvement > 0.0001 or mutated:
+    while (improvement > 0.0001 or mutated) and (max_iter == 0 or iteration < max_iter):
       # mutated = False
       gradient_x, gradient_y = _coords_loss_gradient(x, y, n, adjacency)
       x -= learning_rate*gradient_x
@@ -59,6 +61,8 @@ def find_optimal_coords(n, adjacency, representation='list', vertex_spacing_fact
 def mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, current_loss):
   current_intersections = count_intersections(x, y, n, adjacency)
   low_edge_vertices = [i for i in range(n) if len(adjacency[i])<=2]
+  if len(low_edge_vertices) == 0:
+    return current_loss, False
   mutation_index = np.random.randint(len(low_edge_vertices))
   if len(adjacency[low_edge_vertices[mutation_index]]) == 1: # random rotate around neighbor
     neighbor_i, _ = adjacency[low_edge_vertices[mutation_index]][0]
@@ -76,6 +80,9 @@ def mutate(x, y, n, adjacency, vertex_spacing_factor, edge_spacing_factor, curre
     d = (x[low_edge_vertices[mutation_index]] + (y[low_edge_vertices[mutation_index]] - c)*a)/(1 + a**2)
     x_shift = 2*d - 2*x[low_edge_vertices[mutation_index]]
     y_shift = 2*d*a + 2*c - 2*y[low_edge_vertices[mutation_index]]
+  else:
+    x_shift = 0
+    y_shift = 0
     # print 'Flipping 2-n node across edge'
   x[low_edge_vertices[mutation_index]] += x_shift
   y[low_edge_vertices[mutation_index]] += y_shift
@@ -110,6 +117,7 @@ def count_intersections(x, y, n, adjacency):
       if len(set([a[0], a[1], b[0], b[1]])) == 4 and intersect(a[0], a[1], b[0], b[1]):
         count += 1
   return count/2
+
 def _coords_loss(x, y, n, adjacency, vertex_spacing_factor=1, edge_spacing_factor=0):
   result = 0
   mean_edge_cost = get_mean_edge_cost(adjacency)
@@ -182,4 +190,37 @@ def save_svg(filename, n, x, y, adjacency, representation='list', labels=None):
       dwg.add(node)
     dwg.save()
   else:
-    raise ValueError('Graph representation \'%s\' is not supported.'%representation)\
+    raise ValueError('Graph representation \'%s\' is not supported.'%representation)
+
+def random_graph(n, e, representation='list', mean_edge_cost=10):
+  # first, create a random spanning tree from a fully connected graph
+  adj_list = [[] for i in range(n)]
+  nodes = set(range(n))
+  unconnected = set(range(n))
+  connected = set()
+  current = random.sample(nodes, 1)[0]
+  unconnected.remove(current)
+  connected.add(current)
+  edge_count = 0
+  while unconnected:
+    neighbor = random.sample(nodes, 1)[0]
+    if neighbor not in connected:
+      edge_cost = np.random.binomial(mean_edge_cost*2-2, 0.5)+1
+      adj_list[current].append((neighbor, edge_cost))
+      adj_list[neighbor].append((current, edge_cost))
+      unconnected.remove(neighbor)
+      connected.add(neighbor)
+      edge_count += 1
+    current = neighbor
+  while edge_count < e:
+    a = np.random.randint(n)
+    b = np.random.randint(n)
+    if a != b and len([d for d, c in adj_list[a] if d == b]) == 0:
+      edge_cost = np.random.binomial(mean_edge_cost*2-2, 0.5)+1
+      adj_list[a].append((b, edge_cost))
+      adj_list[b].append((a, edge_cost))
+      edge_count += 1
+  if representation == 'list':
+    return adj_list
+  else:
+    raise ValueError('Graph representation \'%s\' is not supported.'%representation)
