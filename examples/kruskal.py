@@ -4,12 +4,12 @@ from phanim.animation import GraphAnimation
 from phanim.utils import find_optimal_coords, random_graph
 import os
 from heapq import heappop, heappush
-n = 8
-e = 13
+n = 10
+e = 16
 adj_list = random_graph(n, e)
 labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 print 'Optimizing graph layout.'
-x, y = find_optimal_coords(n, adj_list, verbose=False)
+x, y = find_optimal_coords(n, adj_list, verbose=False, tolerance=3e-5, edge_spacing_factor=0.5, node_spacing_factor=1)
 
 # Helper functions for disjoint set union
 def find(i, parent):
@@ -66,5 +66,5 @@ for cost, i, j in edges:
 anim.next_frame()
 anim.next_frame()
 print 'Writing GIF.'
-anim.save_gif('kruskal.gif', node_radius=20, size=(1000, 1000), fps=1.2)
+anim.save_gif('kruskal.gif', node_radius=20, size=(1000, 1000), fps=1.5)
 print 'Wrote animation to kruskal.gif.'
