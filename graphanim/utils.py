@@ -35,7 +35,7 @@ def find_optimal_coords(n, adjacency, representation='list', tolerance=1e-5, mut
     iteration = 0
     min_dist_matrix = get_min_dist_matrix(n, adjacency)
     while (learning_rate >= min_learning_rate) and (max_iter == 0 or iteration < max_iter):
-      if iteration % 5 == 0 or iteration < 50 and iteration % 3 == 0 or iteration < 20:
+      # if iteration % 5 == 0 or iteration < 50 and iteration % 3 == 0 or iteration < 20:
         # anim = GraphAnimation(n, actual_adjacency, locations[:,0], locations[:,1])
         # anim.save_png('temps3/%s.png'%(str(iteration).zfill(10)), node_radius=17, size=(800, 800))
       # mutated = False

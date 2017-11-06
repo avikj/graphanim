@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
-from phanim.animation import GraphAnimation
-from phanim.utils import find_optimal_coords, random_graph
+from graphanim.animation import GraphAnimation
+from graphanim.utils import find_optimal_coords, random_graph
 import os
 from heapq import heappop, heappush
 n = 10
@@ -9,7 +9,7 @@ e = 16
 adj_list = random_graph(n, e)
 labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 print 'Optimizing graph layout.'
-x, y = find_optimal_coords(n, adj_list, verbose=False, tolerance=3e-5, edge_spacing_factor=0.5, node_spacing_factor=1)
+locations = find_optimal_coords(n, adj_list, verbose=False, tolerance=3e-5, node_spacing_factor=1)
 
 # Helper functions for disjoint set union
 def find(i, parent):
@@ -34,7 +34,7 @@ def merge(i, j, parent, rank):
 highlighted_1 = (255, 0, 0)
 highlighted_2 = (0, 0, 255)
 unhighlighted = (127, 127, 127)
-anim = GraphAnimation(n, adj_list, x, y, labels=labels, initial_color=unhighlighted)
+anim = GraphAnimation(n, adj_list, locations[:,0], locations[:,1], labels=labels, initial_color=unhighlighted)
 anim.next_frame()
 
 # Run Kruskal's algorithm

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
-from phanim.animation import GraphAnimation
-from phanim.utils import find_optimal_coords, random_graph
+from graphanim.animation import GraphAnimation
+from graphanim.utils import find_optimal_coords, random_graph
 import os
 from heapq import heappop, heappush
 n = 10 
