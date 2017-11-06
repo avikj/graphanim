@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 import numpy as np
 from phanim.animation import GraphAnimation
-from phanim.utils import find_optimal_coords, random_graph
+from phanim.utils import find_optimal_coords, random_graph, random_spanning_tree
 import os
 from heapq import heappop, heappush
-n = 10 
+n = 10
 adj_list = random_graph(n, 13)
 print adj_list
 '''adj_list = [[] for i in range(n)]
@@ -12,7 +12,7 @@ for i in range(n):
   for j in range(2):
     adj_list[i].append(((i+j+1)%n, 1))
     adj_list[(i+j+1)%n].append((i, 1))'''
-labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789'
 print 'Optimizing graph layout.'
 locations, edge_mids = find_optimal_coords(n, adj_list, verbose=True, tolerance=1e-4, max_iter=1000, mutation_rate=0.4, curved_edges=True, spring_mode='edges_only', node_spacing_factor=0.5)
 
@@ -58,6 +58,6 @@ anim.next_frame()
 anim.next_frame()
 print 'Writing GIF.'
 rand = np.random.randint(100000)
-anim.save_gif('prim%d.gif'%rand, node_radius=17, size=(800, 800), fps=1.2)
+anim.save_gif('prim%d.gif'%rand, node_radius=17, size=(1200, 1200), fps=1.2)
 anim.save_json('prim%d.json'%rand)
 print 'Wrote animation to prim%d.gif.'%rand

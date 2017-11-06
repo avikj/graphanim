@@ -24,20 +24,20 @@ def find_optimal_coords(n, adjacency, representation='list', tolerance=1e-5, mut
         dest, cost = adjacency[i][j]
         adjacency[i][j] = (dest, cost/mean_edge_cost)
     locations = np.random.rand(n, 2)
-    learning_rate = .001
-    min_learning_rate = 0.000001*n
+    learning_rate = .0003
+    min_learning_rate = 0.00001*n
     if verbose:
       print 'learning rate:', learning_rate
     improvement = 1
-    iteration = 0
     prev_loss = float('inf')
     mutated = False
     mutation_count = 0
+    iteration = 0
     min_dist_matrix = get_min_dist_matrix(n, adjacency)
     while (learning_rate >= min_learning_rate) and (max_iter == 0 or iteration < max_iter):
-      if iteration % 5 == 0:
-        anim = GraphAnimation(n, actual_adjacency, locations[:,0], locations[:,1])
-        anim.save_png('temps/%s.png'%(str(iteration).zfill(10)), node_radius=17, size=(800, 800))
+      if iteration % 5 == 0 or iteration < 50 and iteration % 3 == 0 or iteration < 20:
+        # anim = GraphAnimation(n, actual_adjacency, locations[:,0], locations[:,1])
+        # anim.save_png('temps3/%s.png'%(str(iteration).zfill(10)), node_radius=17, size=(800, 800))
       # mutated = False
       gradient = _coords_loss_gradient(locations, n, adjacency, min_dist_matrix, spring_mode=spring_mode, node_spacing_factor=10)
       locations -= learning_rate*gradient 
@@ -79,15 +79,15 @@ def find_optimal_coords(n, adjacency, representation='list', tolerance=1e-5, mut
       improvement = None
       last_energy = float('inf')
       while improvement is None or improvement > tolerance/4:
-        iterations += 1
+        iteration += 1
         if iteration % 5 == 0:
-        anim = GraphAnimation(n, actual_adjacency, locations[:,0], locations[:,1], edge_midpoints = edge_midpoints)
-        anim.save_png('temps/%s.png'%(str(iteration).zfill(10)), node_radius=17, size=(800, 800))
+          anim = GraphAnimation(n, actual_adjacency, locations[:,0], locations[:,1], edge_midpoints = edge_midpoints)
+          anim.save_png('temps3/%s.png'%(str(iteration).zfill(10)), node_radius=17, size=(800, 800))
         force = np.zeros((n, n, 2))
         energy = 0
         for i in range(n):
           for j, c in adjacency[i]: # for each edge midpoint
-            k = (n)*2
+            k = n*2
             force[i][j] += k*(locations[i]-edge_midpoints[i][j])
             force[i][j] += k*(locations[j]-edge_midpoints[i][j])
             energy += 0.5*k*(np.linalg.norm(locations[i]-edge_midpoints[i][j]))**2
@@ -251,7 +251,7 @@ def save_svg(filename, n, x, y, adjacency, representation='list', labels=None):
   y = np.array(y)
   x -= min(x)
   y -= min(y)
-  labels = labels or 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  labels = labels or 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789'
   scale = 600/max(np.max(x), np.max(y))
   shift = 20
   node_radius = 15

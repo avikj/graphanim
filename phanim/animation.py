@@ -4,7 +4,7 @@ import copy
 import json
 import math
 class GraphAnimation:
-  def __init__(self, n, adjacency, x, y, edge_midpoints=None, labels='ABCDEFGHIJKLMNOPQRSTUVWXYZ', initial_color=(0, 0, 0)):
+  def __init__(self, n, adjacency, x, y, edge_midpoints=None, labels='ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789', initial_color=(0, 0, 0)):
     # TODO: check that the provided graph is unweighted
     self.n = n
     self.adjacency = adjacency
@@ -156,7 +156,7 @@ class GraphAnimation:
         else:
           ox, oy, r, a1, a2 = _arc_through_points(x[edge_src], y[edge_src], edge_midpoints[edge_src][edge_dest][0], edge_midpoints[edge_src][edge_dest][1], x[edge_dest], y[edge_dest])
           if ox + oy + r != float('nan') and ox + oy + r != float('inf'):
-            ctx.arc([ox-r, oy-r, ox+r, oy+r], a1, a2, fill=tuple(edge_colors[(edge_src, edge_dest)]))
+            ctx.arc([ox-r, oy-r, ox+r, oy+r], a1, a2, fill=(0,0,0))
             ctx.arc([ox-r-0.5, oy-r-0.5, ox+r+0.5, oy+r+0.5], a1, a2, fill=(0,0,0))
             ctx.arc([ox-r+0.5, oy-r+0.5, ox+r+0.5, oy+r+0.5], a1, a2, fill=(0,0,0))
             ctx.arc([ox-r-0.5, oy-r-0.5, ox+r-0.5, oy+r-0.5], a1, a2, fill=(0,0,0))
