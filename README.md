@@ -1,3 +1,6 @@
+<img src="/examples/prim69499.gif" width="500" alt="Prim's algorithm running on a graph with 14 nodes." title="Prim's algorithm running on a graph with 14 nodes.">
+
+
 # graphanim
 Python graph algorithm animation library. Add a few lines to an existing algorithm to view it as a GIF.
 
